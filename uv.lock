@@ -12,12 +12,25 @@ wheels = [
 ]
 
 [[package]]
+name = "semver-range"
+version = "0.0.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ce/77/83ecf5c4612ff5bac6e9566e5729c222c2daf51b065a8e136509de2f75f2/semver_range-0.0.3.tar.gz", hash = "sha256:3ccd09d5a28da3627374e41740879e85c3ce68cd607cf37bf6cbb52beb1f3a90", size = 6053 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/31/e6/5b97fe25f2ed73490d6b793d01aef25ba61d32f35f3891b2d98ef3f55a6e/semver_range-0.0.3-py3-none-any.whl", hash = "sha256:dd609e036a2a0952474b1ccb1d694da407d681ae7f36f53abc2209e6d02189d3", size = 7050 },
+]
+
+[[package]]
 name = "tiny-package-manager"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "semver" },
+    { name = "semver-range" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "semver", specifier = ">=3.0.4" }]
+requires-dist = [
+    { name = "semver", specifier = ">=3.0.4" },
+    { name = "semver-range", specifier = ">=0.0.3" },
+]
