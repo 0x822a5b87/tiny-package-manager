@@ -1,7 +1,9 @@
+import json
 import os
 
 import requests
 import semver
+from semver_range import Version, Range
 
 
 class Package:
@@ -15,13 +17,38 @@ class Package:
 class RemotePackage(Package):
     def __init__(self, name: str, sem_version_str: str):
         super().__init__(name)
-        if semver.VersionInfo.is_valid(sem_version_str):
-            self.sem_version = semver.Version.parse(sem_version_str)
+        if Range(sem_version_str):
+            self.sem_version = Range(sem_version_str)
         else:
             raise ValueError(f"Invalid semver version: {sem_version_str}")
 
     def fetch(self) -> bytes:
         return self._http_fetch()
+
+    def _get_pinned_reference(self) -> Version:
+        url = f"https://registry.yarnpkg.com/{self.name}"
+        response = requests.get(url)
+        if response.status_code != 200:
+            raise ValueError(f"error fetching package info {url}")
+        package_info = json.loads(response.content)
+        versions:dict = package_info["versions"]
+        max_satisfying_ver = None
+        for version in versions:
+            max_satisfying_ver = self._max_satisfying_ver(Version(version), max_satisfying_ver)
+        return max_satisfying_ver
+
+    def _max_satisfying_ver(self, version:Version, max_satisfying_ver:Version) -> Version:
+        if version not in self.sem_version:
+            return max_satisfying_ver
+
+        if max_satisfying_ver is None:
+            return version
+
+        if version > max_satisfying_ver:
+            return version
+        else:
+            return max_satisfying_ver
+
 
     def _http_fetch(self):
         url = f"https://registry.yarnpkg.com/{self.name}/-/{self.name}-{str(self.sem_version)}.tgz"
