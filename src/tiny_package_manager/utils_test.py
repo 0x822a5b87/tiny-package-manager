@@ -14,11 +14,11 @@ class UtilsTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """init stream data"""
-        cls.dayjs = LocalPackage("dayjs", "./dayjs-1.11.13.tgz")
-        cls.dayjs_spec = LocalPackage("dayjs", "./dayjs-1.11.13.json")
+        cls.dayjs = LocalPackage("dayjs", "./resources/dayjs-1.11.13.tgz")
+        cls.dayjs_spec = LocalPackage("dayjs", "./resources/dayjs-1.11.13.json")
 
-        cls.jest = LocalPackage("jest", "./jest-0.0.71.tgz")
-        cls.jest_spec = LocalPackage("jest", "./jest-0.0.71.json")
+        cls.jest = LocalPackage("jest", "./resources/jest-0.0.71.tgz")
+        cls.jest_spec = LocalPackage("jest", "./resources/jest-0.0.71.json")
 
     def test_read_file_from_tar(self):
         tar = read_file_from_tar(self.dayjs.fetch(), "package", "package.json")

@@ -11,24 +11,23 @@ I'm a relative package.'''
 class ManagerTestCase(unittest.TestCase):
     @staticmethod
     def test_local_package_1():
-        local = LocalPackage("local", "./relative_package")
+        local = LocalPackage("local", "./resources/relative_package")
         assert local.fetch() == RELATIVE_DATA.encode()
 
     @staticmethod
     def test_local_package_2():
-        local = LocalPackage("local", "../tiny-package-manager/relative_package")
+        local = LocalPackage("local", "../tiny-package-manager/resources/relative_package")
         assert local.fetch() == RELATIVE_DATA.encode()
 
     @staticmethod
     def test_remote_package_1():
         remote = RemotePackage("dayjs", "1.11.13")
-        local = LocalPackage("dayjs", "./dayjs-1.11.13.tgz")
+        local = LocalPackage("dayjs", "./resources/dayjs-1.11.13.tgz")
         assert remote.fetch() == local.fetch()
 
     @staticmethod
     def test_remote_package_get_pinned_reference():
         remote = RemotePackage("dayjs", "1.11.0")
-        v = Version("1.11.0")
         assert remote._get_pinned_reference() == Version("1.11.0")
 
         remote = RemotePackage("dayjs", ">=1.11.0")
