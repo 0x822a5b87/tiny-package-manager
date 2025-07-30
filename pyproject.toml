@@ -6,8 +6,10 @@ readme = "README.md"
 authors = [
     { name = "hangyudu", email = "hangyudu@tencent.com" }
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.13"
 dependencies = [
+    "requests>=2.32.4",
+    "semantic-version>=2.10.0",
     "semver>=3.0.4",
     "semver-range>=0.0.3",
 ]
