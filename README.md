@@ -19,18 +19,33 @@ title: dependencies
 ---
 flowchart LR
 
-jest("jest-0.0.71"):::green
+jest("jest"):::pink
+
+jest2("0.0.61"):::green
+jest1("0.0.71"):::green
 
 express-resource("express-resource-*"):::purple
 underscore("underscore-*"):::purple
 sji("sji-*"):::purple
 
+
+express("express-*"):::purple
+api-easy("api-easy-*"):::purple
+mongoose("mongoose-*"):::purple
+
 indirect01("indirect dependency ..."):::animate
 
-jest --> express-resource --> indirect01
-jest --> underscore --> indirect01
-jest --> sji --> indirect01
+jest --> jest1
+jest --> jest2
 
+jest1 --> express-resource --> indirect01
+jest1 --> underscore --> indirect01
+jest1 --> sji --> indirect01
+
+jest2 --> express --> indirect01
+jest2 --> api-easy --> indirect01
+jest2 --> mongoose --> indirect01
+jest2 --> express-resource
 
 classDef pink 1,fill:#FFCCCC,stroke:#333, color: #fff, font-weight:bold;
 classDef green fill: #696,color: #fff,font-weight: bold;
@@ -50,23 +65,23 @@ We can start our incremental parse now. The solution is quite simple:
 
 ## ARE ALL DEPENDENCIES  FINISHED?
 
-> `((A, 3), (B, 3), (C, 3))` ， our goal is to check whether the version is legal.
+> `((jest, 0.0.1), (express, 3), (babel, 3))` ， our goal is to check whether the version is legal.
 
 ```json
 {
-  "A": {
-    "3": {"B": ["3", "2"], "C": ["2"]},
-    "2": {"B": ["2"],      "C": ["2", "1"]},
-    "1": {"B": ["1"]}
+  "jest": {
+    "0.0.3": {"express": ["0.0.3", "0.0.2"], "babel": ["0.0.2"]},
+    "0.0.2": {"express": ["0.0.2"],      "babel": ["0.0.2", "0.0.1"]},
+    "0.0.1": {"express": ["0.0.1"]}
   },
-  "B": {
-    "3": {"C": ["2"]},
-    "2": {"C": ["1"]},
-    "1": {"C": ["1"]}
+  "express": {
+    "0.0.3": {"babel": ["0.0.2"]},
+    "0.0.2": {"babel": ["0.0.1"]},
+    "0.0.1": {"babel": ["0.0.1"]}
   },
-  "C": {
-    "2": [],
-    "1": []
+  "babel": {
+    "0.0.2": [],
+    "0.0.1": []
   }
 }
 ```
@@ -77,16 +92,16 @@ title: Original Dependencies
 ---
 flowchart LR
 
-A3("A3"):::green
-A2("A2"):::green
-A1("A1"):::green
+A3("jest-0.0.3"):::green
+A2("jest-0.0.2"):::green
+A1("jest-0.0.1"):::green
 
-B3("B3"):::purple
-B2("B2"):::purple
-B1("B1"):::purple
+B3("express-0.0.3"):::purple
+B2("express-0.0.2"):::purple
+B1("express-0.0.1"):::purple
 
-C2("C2"):::pink
-C1("C1"):::pink
+C2("babel-0.0.2"):::pink
+C1("babel-0.0.1"):::pink
 
 A3 --> B3
 A3 --> B2
@@ -114,16 +129,16 @@ title: Dependencies after merging duplicate
 ---
 flowchart LR
 
-A3("A3"):::green
-A2("A2"):::green
-A1("A1"):::green
+A3("jest-0.0.3"):::green
+A2("jest-0.0.2"):::green
+A1("jest-0.0.1"):::green
 
-B3("B3"):::purple
-B2("B2"):::purple
-B1("B1"):::purple
+B3("express-0.0.3"):::purple
+B2("express-0.0.2"):::purple
+B1("express-0.0.1"):::purple
 
-C2("C2"):::pink
-C1("C1"):::pink
+C2("babel-0.0.2"):::pink
+C1("babel-0.0.1"):::pink
 
 A3 --> B3
 A3 --> B2
