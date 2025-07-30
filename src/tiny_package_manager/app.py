@@ -3,7 +3,7 @@ import os
 import requests
 from semantic_version import Version, NpmSpec
 
-from .reference import Reference
+from .reference import Reference, PackageVersion
 
 
 class Package:
@@ -36,21 +36,21 @@ class RemotePackage(Package):
         return self._http_fetch()
 
     def _get_pinned_reference(self) -> Version:
-        versions  = self.references.versions(self.name)
+        versions  = self.references.package_versions(self.name)
         max_satisfying_ver = None
         for version in versions:
             max_satisfying_ver = self._max_satisfying_ver(version, max_satisfying_ver)
         return max_satisfying_ver
 
-    def _max_satisfying_ver(self, version: Version, max_satisfying_ver: Version) -> Version:
-        if version not in self.sem_version:
+    def _max_satisfying_ver(self, package_version: PackageVersion, max_satisfying_ver: Version) -> Version:
+        if package_version.version not in self.sem_version:
             return max_satisfying_ver
 
         if max_satisfying_ver is None:
-            return version
+            return package_version.version
 
-        if version > max_satisfying_ver:
-            return version
+        if package_version.version > max_satisfying_ver:
+            return package_version.version
         else:
             return max_satisfying_ver
 
