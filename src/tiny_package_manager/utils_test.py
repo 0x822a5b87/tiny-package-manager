@@ -28,15 +28,15 @@ class UtilsTestCase(unittest.TestCase):
         assert tar == self.jest_spec.fetch()
 
     def test_read_dependencies(self):
-        dependencies = read_dependencies(self.dayjs.fetch())
+        dependencies = read_dependencies("dayjs", self.dayjs.fetch())
         assert len(dependencies) == 0
 
-        dependencies = read_dependencies(self.jest.fetch())
+        dependencies = read_dependencies("jest", self.jest.fetch())
         assert len(dependencies) == 3
         dependencies = sorted(dependencies)
-        expected_dependencies = sorted([RemotePackage("express-resource", ""),
-                                        RemotePackage("underscore", ""),
-                                        RemotePackage("sji", "")])
+        expected_dependencies = sorted([RemotePackage("express-resource", "", YarnReference()),
+                                        RemotePackage("underscore", "", YarnReference()),
+                                        RemotePackage("sji", "", YarnReference())])
         assert dependencies == expected_dependencies
 
 

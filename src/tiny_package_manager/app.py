@@ -1,8 +1,9 @@
-import json
 import os
 
 import requests
-from semver_range import Version, Range
+from semantic_version import Version, NpmSpec
+
+from .reference import Reference
 
 
 class Package:
@@ -14,12 +15,10 @@ class Package:
 
 
 class RemotePackage(Package):
-    def __init__(self, name: str, sem_version_str: str):
+    def __init__(self, name: str, sem_version_str: str, reference: Reference):
         super().__init__(name)
-        if Range(sem_version_str):
-            self.sem_version = Range(sem_version_str)
-        else:
-            raise ValueError(f"Invalid semver version: {sem_version_str}")
+        self.sem_version = NpmSpec(sem_version_str)
+        self.references = reference
 
     def __eq__(self, __value):
         return (str(self.sem_version) == str(__value.sem_version)
@@ -37,15 +36,10 @@ class RemotePackage(Package):
         return self._http_fetch()
 
     def _get_pinned_reference(self) -> Version:
-        url = f"https://registry.yarnpkg.com/{self.name}"
-        response = requests.get(url)
-        if response.status_code != 200:
-            raise ValueError(f"error fetching package info {url}")
-        package_info = json.loads(response.content)
-        versions: dict = package_info["versions"]
+        versions  = self.references.versions(self.name)
         max_satisfying_ver = None
         for version in versions:
-            max_satisfying_ver = self._max_satisfying_ver(Version(version), max_satisfying_ver)
+            max_satisfying_ver = self._max_satisfying_ver(version, max_satisfying_ver)
         return max_satisfying_ver
 
     def _max_satisfying_ver(self, version: Version, max_satisfying_ver: Version) -> Version:

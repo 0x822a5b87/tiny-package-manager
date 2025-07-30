@@ -3,13 +3,14 @@ import tarfile
 from io import BytesIO
 
 from .app import RemotePackage
+from .reference import YarnReference
 
 
-def read_dependencies(package_data: bytes) -> list[RemotePackage]:
+def read_dependencies(name: str, package_data: bytes) -> list[RemotePackage]:
     tar = read_file_from_tar(package_data, "package", "package.json")
     package_spec = json.loads(tar)
     dependencies = package_spec.get("dependencies", {})
-    return [RemotePackage(name, version) for name, version in dependencies.items()]
+    return [RemotePackage(name, version, YarnReference()) for name, version in dependencies.items()]
 
 
 def read_file_from_tar(package_data: bytes, virtual_path: str, file_name: str) -> bytes:
