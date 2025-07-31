@@ -3,15 +3,7 @@ import os
 import requests
 from semantic_version import Version, NpmSpec
 
-from .reference import Reference, PackageVersion
-
-
-class Package:
-    def __init__(self, name: str):
-        self.name = name
-
-    def fetch(self) -> bytes:
-        raise NotImplementedError()
+from .base import Package, Reference, PackageVersion
 
 
 class RemotePackage(Package):

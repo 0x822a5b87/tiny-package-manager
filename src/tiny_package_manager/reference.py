@@ -1,112 +1,21 @@
 import json
 
 import requests
-from semantic_version import Version, NpmSpec
+from semantic_version import NpmSpec
 
-PackageName = str
-VersionName = str
-
-
-class PackageVersion(object):
-    def __init__(self, name: PackageName, version: Version):
-        self.name = name
-        self.version = version
-
-    def __eq__(self, __value):
-        if not isinstance(__value, PackageVersion):
-            return False
-
-        return self.name.__eq__(__value.name)
-
-    def __lt__(self, other):
-        if not isinstance(other, PackageVersion):
-            return NotImplemented(f"Cannot compare {type(self)} to {type(other)}")
-
-        return self.name.__lt__(other.name)
+from .base import *
+from .utils import download
 
 
-class VersionDependency(object):
-    def __init__(self, versions: dict[PackageName, list[Version]]):
-        self.versions = versions
+def format_npm(npm_version: str) -> str:
+    version = npm_version.strip()
 
-    def update(self, package_name: PackageName, versions: list[Version]):
-        if package_name not in self.versions:
-            self.versions[package_name] = []
-        self.versions[package_name] = versions
+    version = version.replace(">= ", ">=").replace("<= ", "<=")
+    version = version.replace("> ", ">").replace("< ", "<")
+    version = version.replace("= ", "=")
+    version = version.replace("^ ", "^")
 
-    def compatible(self, dep_package_version:PackageVersion) -> bool:
-        if PackageName(dep_package_version.name) not in self.versions:
-            raise ValueError(f"Dependency constraint {dep_package_version} is not found")
-        version_list = self.versions[PackageName(dep_package_version.name)]
-        for version in version_list:
-            if version == dep_package_version.version:
-                return True
-        return False
-
-
-class VersionDependencies(object):
-    def __init__(self, version_dependencies: dict[VersionName, VersionDependency]):
-        self.version_dependencies = version_dependencies
-
-    def all_versions(self) -> list[Version]:
-        return [Version(version_name) for version_name in self.version_dependencies]
-
-    def update(self, version_name: VersionName, package_name:PackageName, versions: list[Version]):
-        if version_name not in self.version_dependencies:
-            self.version_dependencies[version_name] = VersionDependency({})
-        self.version_dependencies[version_name].update(package_name, versions)
-
-    def compatible(self, package_version: PackageVersion, dep_package_version:PackageVersion) -> bool:
-        if str(package_version.version) not in self.version_dependencies:
-            raise ValueError(f"Dependency version {package_version} is not found")
-        v = self.version_dependencies[VersionName(package_version.version)]
-        return v.compatible(dep_package_version)
-
-
-class Dependencies(object):
-    def __init__(self, dependencies: dict[PackageName, VersionDependencies]):
-        self.dependencies = dependencies
-
-    def update(self,
-               package_name: PackageName,
-               version_name: VersionName,
-               dep_package_name: PackageName,
-               versions: list[Version]):
-        """
-        update dependencies
-        :param package_name: the name of the package
-        :param version_name: the version of the package
-        :param dep_package_name: the name of the dependency package
-        :param versions: all versions of the dependency package
-        :return:
-        """
-        if package_name not in self.dependencies:
-            self.dependencies[package_name] = VersionDependencies({})
-        self.dependencies[package_name].update(version_name, dep_package_name, versions)
-
-    def all_versions(self) -> list[Version]:
-        return [Version(version_name) for version_name in self.dependencies]
-
-    def contains(self, package_version: PackageVersion) -> bool:
-        return package_version.name in self.dependencies
-
-    def compatible(self, package_version: PackageVersion, dep_package_version:PackageVersion) -> bool:
-        if package_version.name not in self.dependencies:
-            raise ValueError(f"Dependency package {package_version} is not found")
-        version_dependencies = self.dependencies[package_version.name]
-        return version_dependencies.compatible(package_version, dep_package_version)
-
-
-class Reference(object):
-    def package_versions(self, name: str) -> list[PackageVersion]:
-        """
-        retrieve versions of packages named `name`
-        """
-        raise NotImplementedError()
-
-    def dependencies(self, name: str, version: Version) -> Dependencies:
-        raise NotImplementedError()
-
+    return version
 
 class JsonReference(Reference):
     """
@@ -211,28 +120,29 @@ class YarnReference(Reference):
 
     def _update_metadata(self, package_name: PackageName):
         metadata = self.get_metadata(package_name)
+        self._init_new_dependencies(metadata)
         versions: dict = metadata["versions"]
         for version_name, version_metadata in versions.items():
             if "dependencies" not in version_metadata:
                 continue
             dependencies: dict = version_metadata["dependencies"]
             for dependency_name, npm_version_str in dependencies.items():
-                npm_version = NpmSpec(self.format_npm(npm_version_str))
+                npm_version = NpmSpec(format_npm(npm_version_str))
                 dependency_versions = self.package_versions(dependency_name)
                 compatible_versions = [dependency_version.version
                                        for dependency_version in dependency_versions
                                        if dependency_version.version in npm_version]
                 self.manifest.update(package_name, version_name, dependency_name, compatible_versions)
 
-    def format_npm(self, npm_version: str) -> str:
-        version = npm_version.strip()
-
-        version = version.replace(">= ", ">=").replace("<= ", "<=")
-        version = version.replace("> ", ">").replace("< ", "<")
-        version = version.replace("= ", "=")
-        version = version.replace("^ ", "^")
-
-        return version
+    def _init_new_dependencies(self, metadata: dict):
+        from .utils import parse_all_dependency_name
+        all_dependency_name = parse_all_dependency_name(metadata)
+        new_dependencies = [dependency_name
+                            for dependency_name in all_dependency_name
+                            if dependency_name not in self.package_version_cache]
+        dataset = download(set(new_dependencies))
+        for package_name, package_data in dataset.items():
+            self.package_version_cache[package_name] = json.loads(package_data)
 
     def _parse_versions(self):
         pass
