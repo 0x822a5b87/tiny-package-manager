@@ -34,12 +34,12 @@ class VersionDependency(object):
             self.versions[package_name] = []
         self.versions[package_name] = versions
 
-    def compatible(self, package_version: PackageVersion) -> bool:
-        if PackageName(package_version.name) not in self.versions:
-            raise ValueError(f"Dependency constraint {package_version} is not found")
-        version_list = self.versions[PackageName(package_version.name)]
+    def compatible(self, dep_package_version:PackageVersion) -> bool:
+        if PackageName(dep_package_version.name) not in self.versions:
+            raise ValueError(f"Dependency constraint {dep_package_version} is not found")
+        version_list = self.versions[PackageName(dep_package_version.name)]
         for version in version_list:
-            if version == package_version.version:
+            if version == dep_package_version.version:
                 return True
         return False
 
@@ -56,11 +56,11 @@ class VersionDependencies(object):
             self.version_dependencies[version_name] = VersionDependency({})
         self.version_dependencies[version_name].update(package_name, versions)
 
-    def compatible(self, package_version: PackageVersion) -> bool:
+    def compatible(self, package_version: PackageVersion, dep_package_version:PackageVersion) -> bool:
         if str(package_version.version) not in self.version_dependencies:
             raise ValueError(f"Dependency version {package_version} is not found")
         v = self.version_dependencies[VersionName(package_version.version)]
-        return v.compatible(package_version)
+        return v.compatible(dep_package_version)
 
 
 class Dependencies(object):
@@ -90,11 +90,11 @@ class Dependencies(object):
     def contains(self, package_version: PackageVersion) -> bool:
         return package_version.name in self.dependencies
 
-    def compatible(self, package_version: PackageVersion) -> bool:
+    def compatible(self, package_version: PackageVersion, dep_package_version:PackageVersion) -> bool:
         if package_version.name not in self.dependencies:
             raise ValueError(f"Dependency package {package_version} is not found")
         version_dependencies = self.dependencies[package_version.name]
-        return version_dependencies.compatible(package_version)
+        return version_dependencies.compatible(package_version, dep_package_version)
 
 
 class Reference(object):
@@ -157,6 +157,11 @@ class YarnReference(Reference):
         self.direct_dependencies = direct_dependencies
         self.manifest = Dependencies({})
 
+    def package_versions(self, name: str) -> list[PackageVersion]:
+        package_info = self.get_metadata(name)
+        versions: dict = package_info["versions"]
+        return [PackageVersion(name, Version(version)) for version in versions]
+
     def compile(self):
         # for package_name, npm_spec in self.direct_dependencies.items():
         #     package_versions = self.package_versions(package_name)
@@ -191,41 +196,49 @@ class YarnReference(Reference):
         else:
             head, tail = unresolved[0], unresolved[1:]
             # Check if the head satisfies the constraint
+            # TODO check error
             if self._compatible(head):
                 candidate = selected + [head]
                 self._compile(solution, candidate, unresolved)
 
-    def _compatible(self, current: PackageVersion) -> bool:
+    def _compatible(self, current: PackageVersion, dep: PackageVersion) -> bool:
         if not self.manifest.contains(current):
             try:
                 self._update_metadata(current.name)
             except Exception:
                 print(f"failed to update metadata for {current}")
-        return self.manifest.compatible(current)
+        return self.manifest.compatible(current, dep)
 
     def _update_metadata(self, package_name: PackageName):
         metadata = self.get_metadata(package_name)
         versions: dict = metadata["versions"]
         for version_name, version_metadata in versions.items():
+            if "dependencies" not in version_metadata:
+                continue
             dependencies: dict = version_metadata["dependencies"]
             for dependency_name, npm_version_str in dependencies.items():
-                npm_version = NpmSpec(npm_version_str)
-                dependency_versions = self._package_versions(dependency_name)
-                compatible_versions = [Version(dependency_version.version)
+                npm_version = NpmSpec(self.format_npm(npm_version_str))
+                dependency_versions = self.package_versions(dependency_name)
+                compatible_versions = [dependency_version.version
                                        for dependency_version in dependency_versions
                                        if dependency_version.version in npm_version]
                 self.manifest.update(package_name, version_name, dependency_name, compatible_versions)
+
+    def format_npm(self, npm_version: str) -> str:
+        version = npm_version.strip()
+
+        version = version.replace(">= ", ">=").replace("<= ", "<=")
+        version = version.replace("> ", ">").replace("< ", "<")
+        version = version.replace("= ", "=")
+        version = version.replace("^ ", "^")
+
+        return version
 
     def _parse_versions(self):
         pass
 
     def _parse_dependencies(self):
         pass
-
-    def _package_versions(self, name: PackageName) -> list[PackageVersion]:
-        package_info = self.get_metadata(name)
-        versions: dict = package_info["versions"]
-        return [PackageVersion(name, Version(version)) for version in versions]
 
     def get_metadata(self, name: PackageName) -> dict:
         if name not in self.package_version_cache:
