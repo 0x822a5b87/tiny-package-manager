@@ -68,7 +68,7 @@ def download_with_cache(dependency_names: set[PackageName]) -> dict[str, bytes]:
     dataset: dict[str, bytes] = {}
     uncached_dep: set[PackageName] = set()
     for dependency_name in dependency_names:
-        local = LocalPackage(dependency_name, f"../resources/{format_name(dependency_name)}")
+        local = LocalPackage(dependency_name, f"./resources/{format_name(dependency_name)}")
         if local.exist():
             dataset[dependency_name] = local.fetch()
         else:
@@ -77,7 +77,7 @@ def download_with_cache(dependency_names: set[PackageName]) -> dict[str, bytes]:
     dataset.update(uncached_dataset)
     for dependency_name in uncached_dataset:
         data = dataset[dependency_name]
-        local = LocalPackage(dependency_name, f"../resources/{format_name(dependency_name)}")
+        local = LocalPackage(dependency_name, f"./resources/{format_name(dependency_name)}")
         local.store(data)
 
     return dataset
