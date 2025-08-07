@@ -5,7 +5,7 @@ from io import BytesIO
 
 import requests
 
-from .app import RemotePackage
+from .app import RemotePackage, LocalPackage
 from .reference import PackageName
 
 
@@ -56,6 +56,31 @@ def download(dependency_names: set[PackageName]) -> dict[str, bytes]:
             data = future.result()
             dataset[package_name] = data
         return dataset
+
+
+def format_name(name: str) -> str:
+    name = name.replace("@", "at_")
+    name = name.replace("/", "_")
+    return name
+
+
+def download_with_cache(dependency_names: set[PackageName]) -> dict[str, bytes]:
+    dataset: dict[str, bytes] = {}
+    uncached_dep: set[PackageName] = set()
+    for dependency_name in dependency_names:
+        local = LocalPackage(dependency_name, f"../resources/{format_name(dependency_name)}")
+        if local.exist():
+            dataset[dependency_name] = local.fetch()
+        else:
+            uncached_dep.add(dependency_name)
+    uncached_dataset = download(uncached_dep)
+    dataset.update(uncached_dataset)
+    for dependency_name in uncached_dataset:
+        data = dataset[dependency_name]
+        local = LocalPackage(dependency_name, f"../resources/{format_name(dependency_name)}")
+        local.store(data)
+
+    return dataset
 
 
 def parse_all_dependency_name(metadata: dict) -> set[PackageName]:

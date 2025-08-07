@@ -59,10 +59,18 @@ class LocalPackage(Package):
     def __init__(self, name: str, path: str):
         super().__init__(name)
         self.path = path
+        self.abs_path = self._get_abs_path()
+
+    def exist(self) -> bool:
+        return os.path.exists(self.abs_path)
 
     def fetch(self) -> bytes:
-        with open(self._get_abs_path(), "rb") as reader:
+        with open(self.abs_path, "rb") as reader:
             return reader.read()
+
+    def store(self, data: bytes):
+        with open(self.abs_path, "wb") as writer:
+            writer.write(data)
 
     def _get_abs_path(self):
         return os.path.abspath(self.path)

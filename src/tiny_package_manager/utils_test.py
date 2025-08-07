@@ -1,6 +1,5 @@
 import unittest
 
-from .app import LocalPackage
 from .reference import YarnReference
 from .utils import *
 
@@ -33,7 +32,7 @@ class UtilsTestCase(unittest.TestCase):
         reference = YarnReference()
         metadata = reference.get_metadata("jest")
         dependency_names = parse_all_dependency_name(metadata)
-        dataset = download(dependency_names)
+        dataset = download_with_cache(dependency_names)
         self.assertEqual(len(dataset), len(dependency_names))
 
     def test_read_file_from_tar(self):
