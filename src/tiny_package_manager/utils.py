@@ -4,9 +4,30 @@ from concurrent import futures
 from io import BytesIO
 
 import requests
+from semantic_version import Version, NpmSpec
 
 from .app import RemotePackage, LocalPackage
-from .reference import PackageName
+from .base import PackageName, PackageVersion
+
+
+def _max_satisfying_ver(sem_version: NpmSpec, package_version: PackageVersion, max_satisfying_ver: Version) -> Version:
+    if package_version.version not in sem_version:
+        return max_satisfying_ver
+
+    if max_satisfying_ver is None:
+        return package_version.version
+
+    if package_version.version > max_satisfying_ver:
+        return package_version.version
+    else:
+        return max_satisfying_ver
+
+
+def get_pinned_reference(versions: list[PackageVersion], sem_version: NpmSpec) -> Version:
+    max_satisfying_ver = None
+    for version in versions:
+        max_satisfying_ver = _max_satisfying_ver(sem_version, version, max_satisfying_ver)
+    return max_satisfying_ver
 
 
 def read_dependencies(name: str, package_data: bytes) -> list[RemotePackage]:

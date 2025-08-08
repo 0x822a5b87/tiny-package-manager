@@ -27,24 +27,8 @@ class RemotePackage(Package):
     def fetch(self) -> bytes:
         return self._http_fetch()
 
-    def _get_pinned_reference(self) -> Version:
-        versions  = self.references.package_versions(self.name)
-        max_satisfying_ver = None
-        for version in versions:
-            max_satisfying_ver = self._max_satisfying_ver(version, max_satisfying_ver)
-        return max_satisfying_ver
-
-    def _max_satisfying_ver(self, package_version: PackageVersion, max_satisfying_ver: Version) -> Version:
-        if package_version.version not in self.sem_version:
-            return max_satisfying_ver
-
-        if max_satisfying_ver is None:
-            return package_version.version
-
-        if package_version.version > max_satisfying_ver:
-            return package_version.version
-        else:
-            return max_satisfying_ver
+    def package_versions(self) -> list[PackageVersion]:
+        return self.references.package_versions(self.name)
 
     def _http_fetch(self):
         url = f"https://registry.yarnpkg.com/{self.name}/-/{self.name}-{str(self.sem_version)}.tgz"

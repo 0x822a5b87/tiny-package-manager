@@ -2,6 +2,7 @@ import unittest
 
 from semantic_version import Version
 
+from .utils import get_pinned_reference
 from .reference import YarnReference
 from .app import LocalPackage, RemotePackage
 
@@ -29,19 +30,24 @@ class ManagerTestCase(unittest.TestCase):
     @staticmethod
     def test_remote_package_get_pinned_reference():
         remote = RemotePackage("dayjs", "1.11.0", YarnReference())
-        assert remote._get_pinned_reference() == Version("1.11.0")
+        versions = remote.package_versions()
+        assert get_pinned_reference(versions, remote.sem_version) == Version("1.11.0")
 
         remote = RemotePackage("dayjs", ">=1.11.0", YarnReference())
-        assert remote._get_pinned_reference() == Version("1.11.13")
+        versions = remote.package_versions()
+        assert get_pinned_reference(versions, remote.sem_version) == Version("1.11.13")
 
         remote = RemotePackage("dayjs", ">=1.11.0 <1.11.15", YarnReference())
-        assert remote._get_pinned_reference() == Version("1.11.13")
+        versions = remote.package_versions()
+        assert get_pinned_reference(versions, remote.sem_version) == Version("1.11.13")
 
         remote = RemotePackage("dayjs", ">=1.11.14", YarnReference())
-        assert remote._get_pinned_reference() is None
+        versions = remote.package_versions()
+        assert get_pinned_reference(versions, remote.sem_version) is None
 
         remote = RemotePackage("dayjs", ">=1.11.8 <1.11.12", YarnReference())
-        assert remote._get_pinned_reference() == Version("1.11.11")
+        versions = remote.package_versions()
+        assert get_pinned_reference(versions, remote.sem_version) == Version("1.11.11")
 
 
 if __name__ == '__main__':
